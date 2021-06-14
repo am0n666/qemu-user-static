@@ -1,0 +1,39 @@
+name: actions
+on: push
+jobs:
+  qemu-user-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set variables
+        run: |
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "ORIGIN_VERSION=${ORIGIN_VERSION}" >> $GITHUB_ENV
+          echo "DOCKER_REPO=${DOCKER_REPO}/$GITHUB_REPOSITORY" >> $GITHUB_ENV
+        env:
+          VERSION: 5.2.0-2
+          ORIGIN_VERSION: 5.2+dfsg-3
+          DOCKER_REPO: docker.io
+      - name: Build releases
+        run: |
+          wget --content-disposition http://ftp.de.debian.org/debian/pool/main/q/qemu/qemu-user-static_${ORIGIN_VERSION}_amd64.deb
+          dpkg-deb -R qemu-user-static_*.deb .
+          ./generate_tarballs.sh
+      - name: Publish releases
+        if: github.ref == 'refs/heads/master'
+        run: |
+          sudo apt install jq
+          ./publish.sh -v "$VERSION" -t ${{ secrets.GITHUB_TOKEN }} -r "$GITHUB_REPOSITORY"
+      - name: Build images
+        if: github.ref == 'refs/heads/master'
+        run: |
+          ./update.sh -v "$VERSION" -t "$VERSION" -r "$GITHUB_REPOSITORY" -d "$DOCKER_REPO"
+      - name: Test images
+        run: |
+          docker images
+          ./test.sh -d "$DOCKER_REPO"
+      - name: Publish images
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+          docker push $DOCKER_REPO
