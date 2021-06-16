@@ -46,9 +46,9 @@ out_dir="containers"
 
 # Generate register files.
 cp -p "${out_dir}/latest/register.sh" "${out_dir}/register/"
-cp -p "${out_dir}/latest/Dockerfile" "${out_dir}/register/"
+#cp -p "${out_dir}/latest/Dockerfile" "${out_dir}/register/"
 # Comment out the line to copy qemu-*-static not to provide those.
-sed -i '/^COPY qemu/ s/^/#/' "${out_dir}/register/Dockerfile"
+#sed -i '/^COPY qemu/ s/^/#/' "${out_dir}/register/Dockerfile"
 
 for to_arch in $to_archs; do
     if [ "$from_arch" != "$to_arch" ]; then
